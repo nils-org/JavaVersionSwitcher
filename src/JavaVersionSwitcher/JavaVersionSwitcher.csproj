@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>jvs</ToolCommandName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <StartYear>2021</StartYear>
+    <EndYear>$([System.DateTime]::Today.Year)</EndYear>
+    <FullYear Condition="'$(StartYear)'=='$(EndYear)'">$(StartYear)</FullYear>
+    <FullYear Condition="'$(StartYear)'!='$(EndYear)'">$(StartYear)-$(EndYear)</FullYear>
+
+    <!-- Properties related to packaging -->
+    <Authors>Nils Andresen</Authors>
+    <Copyright>Copyright © $(FullYear) — Nils Andresen</Copyright>
+    <Description>.NET tool to make switching java versions on windows easy.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/nils-org/JavaVersionSwitcher</PackageProjectUrl>
+    <PackageTags>java;versions;tool</PackageTags>
+    <RepositoryUrl>https://github.com/nils-org/JavaVersionSwitcher.git</RepositoryUrl>
+    <PackageReleaseNotes>https://github.com/nils-org/JavaVersionSwitcher/releases</PackageReleaseNotes>
+    <Version>0.0.1</Version>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
+    <PackageReference Include="Spectre.Console" Version="0.39.0" />
+  </ItemGroup>
+
+</Project>
