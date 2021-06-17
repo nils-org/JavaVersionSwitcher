@@ -12,6 +12,10 @@ namespace JavaVersionSwitcher
             var app = new CommandApp();
             app.Configure(config =>
             {
+                config.SetApplicationName("dotnet jvs");
+                config.AddExample(new []{ "scan", "--force"});
+                config.AddExample(new []{ "switch" });
+                
                 config.AddCommand<ScanJavaInstallationsCommand>("scan")
                     .WithAlias("scan-for-java")
                     .WithDescription("Scan for existing java installations.");
