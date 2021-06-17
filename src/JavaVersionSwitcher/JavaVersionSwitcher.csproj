@@ -6,6 +6,10 @@
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Include="$(MSBuildProjectDirectory)/../../README.md" PackagePath="" Pack="true" />
+  </ItemGroup>
+
   <PropertyGroup>
     <StartYear>2021</StartYear>
     <EndYear>$([System.DateTime]::Today.Year)</EndYear>
@@ -20,10 +24,12 @@
     <PackageProjectUrl>https://github.com/nils-org/JavaVersionSwitcher</PackageProjectUrl>
     <PackageTags>java;versions;tool</PackageTags>
     <RepositoryUrl>https://github.com/nils-org/JavaVersionSwitcher.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>https://github.com/nils-org/JavaVersionSwitcher/releases</PackageReleaseNotes>
     <Version>0.0.1</Version>
     <ToolCommandName>dotnet-jvs</ToolCommandName>
     <PackageDescription>.NET tool to make switching java versions on windows easy.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   
   <ItemGroup>
