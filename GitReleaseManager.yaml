@@ -3,7 +3,9 @@ create:
   footer-heading: Where to get it
   footer-content: >
     You can install this release via
-    `dotnet tool install -g JavaVersionSwitcher`.
+    `dotnet tool install -g JavaVersionSwitcher --version={milestone}`
+    or update via 
+    `dotnet tool update -g JavaVersionSwitcher --version={milestone}`
   footer-includes-milestone: true
   milestone-replace-text: "{milestone}"
   include-sha-section: true
