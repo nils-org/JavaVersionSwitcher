@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)/../../README.md" PackagePath="" Pack="true" />
+    <None Include="$(MSBuildProjectDirectory)/../../res/logo/logo-128.png" PackagePath="" Pack="true" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -30,6 +31,8 @@
     <ToolCommandName>dotnet-jvs</ToolCommandName>
     <PackageDescription>.NET tool to make switching java versions on windows easy.</PackageDescription>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIconUrl>https://cdn.jsdelivr.net/gh/nils-org/JavaVersionSwitcher@main/res/logo/logo-128.png</PackageIconUrl>
+    <PackageIcon>logo-128.png</PackageIcon>
   </PropertyGroup>
   
   <ItemGroup>
