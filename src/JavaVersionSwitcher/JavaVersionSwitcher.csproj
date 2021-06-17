@@ -4,7 +4,6 @@
     <OutputType>Exe</OutputType>
     <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>jvs</ToolCommandName>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -23,6 +22,8 @@
     <RepositoryUrl>https://github.com/nils-org/JavaVersionSwitcher.git</RepositoryUrl>
     <PackageReleaseNotes>https://github.com/nils-org/JavaVersionSwitcher/releases</PackageReleaseNotes>
     <Version>0.0.1</Version>
+    <ToolCommandName>dotnet-jvs</ToolCommandName>
+    <PackageDescription>.NET tool to make switching java versions on windows easy.</PackageDescription>
   </PropertyGroup>
   
   <ItemGroup>

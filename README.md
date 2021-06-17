@@ -62,8 +62,8 @@ This project follows the [all-contributors][] specification. Contributions of an
 
 [MIT License © Nils Andresen][license]
 
-[githubbuild]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yml?query=branch%3Adevelop
-[githubimage]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yml/badge.svg?branch=develop
+[githubbuild]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yaml?query=branch%3Adevelop
+[githubimage]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yaml/badge.svg?branch=develop
 [maintainer]: https://github.com/nils-a
 [nuget]: https://nuget.org/packages/JavaVersionSwitcher
 [nugetimage]: https://img.shields.io/nuget/v/JavaVersionSwitcher.svg?logo=nuget&style=flat-square
