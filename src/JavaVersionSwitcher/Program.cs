@@ -1,5 +1,7 @@
-﻿using JavaVersionSwitcher.Commands;
+﻿using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Commands;
 using JetBrains.Annotations;
+using SimpleInjector;
 using Spectre.Console.Cli;
 
 namespace JavaVersionSwitcher
@@ -7,9 +9,10 @@ namespace JavaVersionSwitcher
     [UsedImplicitly]
     public class Program
     {
-        static int Main(string[] args)
+        private static int Main(string[] args)
         {
-            var app = new CommandApp();
+            var registrar = BuildRegistrar();
+            var app = new CommandApp(registrar);
             app.Configure(config =>
             {
                 config.SetApplicationName("dotnet jvs");
@@ -23,9 +26,21 @@ namespace JavaVersionSwitcher
                     .WithDescription("Checks if environment is set up correctly.");
                 config.AddCommand<SwitchVersionCommand>("switch")
                     .WithDescription("Switch to a different Java version.");
+
+                config.ValidateExamples();
             });
             
             return app.Run(args);
+        }
+
+        private static ITypeRegistrar BuildRegistrar()
+        {
+            var container = new Container();
+            container.Register<IJavaHomeAdapter, JavaHomeAdapter>(Lifestyle.Singleton);
+            container.Register<IPathAdapter, PathAdapter>(Lifestyle.Singleton);
+            container.Register<IJavaInstallationsAdapter, JavaInstallationsAdapter>(Lifestyle.Singleton);
+            
+            return new SimpleInjectorRegistrar(container);
         }
     }
 }
