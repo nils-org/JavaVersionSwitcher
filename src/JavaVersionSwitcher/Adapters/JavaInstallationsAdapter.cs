@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using JavaVersionSwitcher.Logging;
 using JavaVersionSwitcher.Models;
 using Spectre.Console;
 
@@ -14,6 +15,13 @@ namespace JavaVersionSwitcher.Adapters
     /// <inheritdoc cref="IJavaInstallationsAdapter"/>
     public class JavaInstallationsAdapter : IJavaInstallationsAdapter
     {
+        private readonly ILogger _logger;
+
+        public JavaInstallationsAdapter(ILogger logger)
+        {
+            _logger = logger;
+        }
+        
         /// <inheritdoc cref="IJavaInstallationsAdapter.GetJavaInstallations"/>
         public async Task<IEnumerable<JavaInstallation>> GetJavaInstallations(bool forceReScan = false)
         {
@@ -23,7 +31,10 @@ namespace JavaVersionSwitcher.Adapters
                 {
                     return await LoadCacheData();
                 }
-                catch {/* TODO: Log?? */}
+                catch (Exception ex)
+                {
+                    _logger.LogVerbose($"{ex.GetType().Name} while reading cached data.");
+                }
             }
 
             var data = (await ForceScan()).ToList();
@@ -31,7 +42,11 @@ namespace JavaVersionSwitcher.Adapters
             try
             {
                 await SaveCacheData(data);
-            } catch {/* TODO: Log?? */}
+            } 
+            catch (Exception ex)
+            {
+                _logger.LogVerbose($"{ex.GetType().Name} while writing data cache.");
+            }
 
             return data;
         }
@@ -96,6 +111,9 @@ namespace JavaVersionSwitcher.Adapters
                             Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%")
                         }.Distinct()
                         .Where(x => !string.IsNullOrEmpty(x));
+                    _logger.LogVerbose(
+                        $@"Scanning for installations in:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", start)}");
+                    
                     var javaExeFiles = await FindFileRecursive(start);
                     foreach (var javaExeFile in javaExeFiles)
                     {
@@ -123,7 +141,6 @@ namespace JavaVersionSwitcher.Adapters
                 var results = new List<string>();
                 while (queue.TryDequeue(out var item))
                 {
-                    // log ? Console.WriteLine("Checking: "+item);
                     try
                     {
                         results.AddRange(Directory.GetFiles(item, "java.exe", SearchOption.TopDirectoryOnly));
@@ -133,9 +150,9 @@ namespace JavaVersionSwitcher.Adapters
                             queue.Enqueue(subfolder);
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // log?!
+                        _logger.LogVerbose($"{ex.GetType().Name} while accessing {item}");
                     }
                 }
 

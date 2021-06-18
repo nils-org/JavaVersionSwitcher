@@ -1,5 +1,6 @@
 ﻿using JavaVersionSwitcher.Adapters;
 using JavaVersionSwitcher.Commands;
+using JavaVersionSwitcher.Logging;
 using JetBrains.Annotations;
 using SimpleInjector;
 using Spectre.Console.Cli;
@@ -27,7 +28,10 @@ namespace JavaVersionSwitcher
                 config.AddCommand<SwitchVersionCommand>("switch")
                     .WithDescription("Switch to a different Java version.");
 
+#if DEBUG
+                config.PropagateExceptions();
                 config.ValidateExamples();
+#endif
             });
             
             return app.Run(args);
@@ -36,6 +40,7 @@ namespace JavaVersionSwitcher
         private static ITypeRegistrar BuildRegistrar()
         {
             var container = new Container();
+            container.Register<ILogger, Logger>(Lifestyle.Singleton);
             container.Register<IJavaHomeAdapter, JavaHomeAdapter>(Lifestyle.Singleton);
             container.Register<IPathAdapter, PathAdapter>(Lifestyle.Singleton);
             container.Register<IJavaInstallationsAdapter, JavaInstallationsAdapter>(Lifestyle.Singleton);
