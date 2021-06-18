@@ -6,15 +6,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using JavaVersionSwitcher.Models;
+using Spectre.Console;
 
-#pragma warning disable CA1822
-namespace JavaVersionSwitcher.Worker
+namespace JavaVersionSwitcher.Adapters
 {
-    public class JavaInstallationScanner
+    /// <inheritdoc cref="IJavaInstallationsAdapter"/>
+    public class JavaInstallationsAdapter : IJavaInstallationsAdapter
     {
-        public async Task<IEnumerable<JavaInstallation>> Scan(bool force = false)
+        /// <inheritdoc cref="IJavaInstallationsAdapter.GetJavaInstallations"/>
+        public async Task<IEnumerable<JavaInstallation>> GetJavaInstallations(bool forceReScan = false)
         {
-            if (!force && HasRecentCacheData())
+            if (!forceReScan && HasRecentCacheData())
             {
                 try
                 {
@@ -78,27 +81,35 @@ namespace JavaVersionSwitcher.Worker
 
         private async Task<IEnumerable<JavaInstallation>> ForceScan()
         {
-            // todo configurable start paths?
-            var start = new[]
-                {
-                    Environment.ExpandEnvironmentVariables("%ProgramW6432%"),
-                    Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%")
-                }.Distinct()
-                .Where(x => !string.IsNullOrEmpty(x));
-            var javaExeFiles = await FindFileRecursive(start);
             var result = new List<JavaInstallation>();
-            foreach (var javaExeFile in javaExeFiles)
-            {
-                var (version, fullVersion) = await GetVersion(javaExeFile).ConfigureAwait(false); 
-                var installation = new JavaInstallation
+            await AnsiConsole.Status()
+                .StartAsync("Initializing...", async ctx => 
                 {
-                    Location = Directory.GetParent(javaExeFile)?.Parent?.FullName,
-                    Version = version,
-                    FullVersion = fullVersion
-                };
-                result.Add(installation);
-            }
+                    ctx.Status("Scanning for java installations");
+                    ctx.Spinner(Spinner.Known.Star);
+                    ctx.SpinnerStyle(Style.Parse("green"));
 
+                    // todo configurable start paths?
+                    var start = new[]
+                        {
+                            Environment.ExpandEnvironmentVariables("%ProgramW6432%"),
+                            Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%")
+                        }.Distinct()
+                        .Where(x => !string.IsNullOrEmpty(x));
+                    var javaExeFiles = await FindFileRecursive(start);
+                    foreach (var javaExeFile in javaExeFiles)
+                    {
+                        var (version, fullVersion) = await GetVersion(javaExeFile).ConfigureAwait(false); 
+                        var installation = new JavaInstallation
+                        {
+                            Location = Directory.GetParent(javaExeFile)?.Parent?.FullName,
+                            Version = version,
+                            FullVersion = fullVersion
+                        };
+                        result.Add(installation);
+                    }
+                }).ConfigureAwait(false);
+            
             return result;
         }
 
@@ -163,18 +174,5 @@ namespace JavaVersionSwitcher.Worker
             proc.WaitForExit();
             return new Tuple<string, string>(version, fullVersion.ToString());
         }
-
-        [Serializable]
-        [DebuggerDisplay("{" + nameof(Version) + "}")]
-        public class JavaInstallation
-        {
-            public string Location { get; set; }
-
-            [XmlAttribute]
-            public string Version { get; set; }
-            
-            public string FullVersion { get; set; }
-        }
     }
 }
-#pragma warning restore CA1822
