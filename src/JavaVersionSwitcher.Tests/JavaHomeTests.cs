@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Logging;
+using Moq;
 using Shouldly;
 using Xunit;
 
@@ -8,7 +10,7 @@ namespace JavaVersionSwitcher.Tests
 {
     public class JavaHomeTests
     {
-        private readonly JavaHomeAdapter _adapter = new JavaHomeAdapter();
+        private readonly JavaHomeAdapter _adapter = new JavaHomeAdapter(new Mock<ILogger>().Object);
 
         [Fact]
         public async Task Can_Set_per_process()

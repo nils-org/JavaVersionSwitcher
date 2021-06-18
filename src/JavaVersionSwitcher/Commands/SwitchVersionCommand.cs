@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Logging;
 using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -16,20 +17,23 @@ namespace JavaVersionSwitcher.Commands
         private readonly IJavaHomeAdapter _javaHomeAdapter;
         private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
         private readonly IPathAdapter _pathAdapter;
+        private readonly ILogger _logger;
 
         public SwitchVersionCommand(
             IJavaHomeAdapter javaHomeAdapter,
             IJavaInstallationsAdapter javaInstallationsAdapter,
-            IPathAdapter pathAdapter
+            IPathAdapter pathAdapter,
+            ILogger logger
         )
         {
             _javaHomeAdapter = javaHomeAdapter;
             _javaInstallationsAdapter = javaInstallationsAdapter;
             _pathAdapter = pathAdapter;
+            _logger = logger;
         }
         
         [UsedImplicitly]
-        public sealed class Settings : CommandSettings
+        public sealed class Settings : CommonCommandSettings
         {
             [CommandOption("--machine")]
             [DefaultValue(false)]
@@ -39,6 +43,7 @@ namespace JavaVersionSwitcher.Commands
 
         public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
+            _logger.PrintVerbose = settings.Verbose;
             var installations = await _javaInstallationsAdapter
                 .GetJavaInstallations()
                 .ConfigureAwait(false);

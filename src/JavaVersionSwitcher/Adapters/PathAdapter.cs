@@ -2,16 +2,19 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using JavaVersionSwitcher.Logging;
 
 namespace JavaVersionSwitcher.Adapters
 {
     /// <inheritdoc cref="IPathAdapter"/>
     public class PathAdapter : IPathAdapter
     {
+        private readonly ILogger _logger;
         private readonly SimpleEnvironmentAdapter _adapter;
 
-        public PathAdapter()
+        public PathAdapter(ILogger logger)
         {
+            _logger = logger;
             _adapter = new SimpleEnvironmentAdapter("PATH");
         }
 
