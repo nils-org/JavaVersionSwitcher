@@ -1,10 +1,11 @@
 # JavaVersionSwitcher
 
 [![standard-readme compliant][]][standard-readme]
+[![Contributor Covenant][contrib-covenantimg]][contrib-covenant]
 [![Build][githubimage]][githubbuild]
 [![NuGet package][nugetimage]][nuget]
 
-> .NET tool to make switching java versions on windows easy.
+.NET tool to make switching java versions on windows easy.
 
 ## Table of Contents
 
@@ -56,8 +57,6 @@ We accept Pull Requests.
 
 Small note: If editing the Readme, please conform to the [standard-readme][] specification.
 
-This project follows the [all-contributors][] specification. Contributions of any kind welcome!
-
 ## License
 
 [MIT License © Nils Andresen][license]
@@ -65,6 +64,8 @@ This project follows the [all-contributors][] specification. Contributions of an
 [githubbuild]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yaml?query=branch%3Adevelop
 [githubimage]: https://github.com/nils-org/JavaVersionSwitcher/actions/workflows/build.yaml/badge.svg?branch=develop
 [maintainer]: https://github.com/nils-a
+[contrib-covenant]: https://www.contributor-covenant.org/version/2/0/code_of_conduct/
+[contrib-covenantimg]: https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg
 [nuget]: https://nuget.org/packages/JavaVersionSwitcher
 [nugetimage]: https://img.shields.io/nuget/v/JavaVersionSwitcher.svg?logo=nuget&style=flat-square
 [license]: LICENSE.txt
