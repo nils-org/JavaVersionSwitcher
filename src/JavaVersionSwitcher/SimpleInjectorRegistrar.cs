@@ -8,7 +8,7 @@ namespace JavaVersionSwitcher
     /// <summary>
     /// Shallow wrapper around SimpleInjector
     /// </summary>
-    internal class SimpleInjectorRegistrar : ITypeRegistrar
+    public class SimpleInjectorRegistrar : ITypeRegistrar
     {
         private readonly Container _container;
         private readonly Type[] _knownMultiRegistrations;
