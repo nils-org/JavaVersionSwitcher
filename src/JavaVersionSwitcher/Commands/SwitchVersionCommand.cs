@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
@@ -18,18 +19,21 @@ namespace JavaVersionSwitcher.Commands
         private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
         private readonly IPathAdapter _pathAdapter;
         private readonly ILogger _logger;
+        private readonly IShellAdapter _shellAdapter;
 
         public SwitchVersionCommand(
             IJavaHomeAdapter javaHomeAdapter,
             IJavaInstallationsAdapter javaInstallationsAdapter,
             IPathAdapter pathAdapter,
-            ILogger logger
+            ILogger logger,
+            IShellAdapter shellAdapter
         )
         {
             _javaHomeAdapter = javaHomeAdapter;
             _javaInstallationsAdapter = javaInstallationsAdapter;
             _pathAdapter = pathAdapter;
             _logger = logger;
+            _shellAdapter = shellAdapter;
         }
         
         [UsedImplicitly]
@@ -56,6 +60,8 @@ namespace JavaVersionSwitcher.Commands
                     .AddChoices(installations.Select(x => x.Location).ToArray())
             );
 
+            string javaHome = null;
+            string javaBin = null;
             await AnsiConsole.Status()
                 .StartAsync("Applying...", async ctx =>
                 {
@@ -66,20 +72,42 @@ namespace JavaVersionSwitcher.Commands
                         ? EnvironmentScope.Machine
                         : EnvironmentScope.User;
 
-                    var javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
+                    javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
                     var paths = (await _pathAdapter.GetValue(scope)).ToList();
                     if (!string.IsNullOrEmpty(javaHome))
                     {
                         paths = paths.Where(x => !x.StartsWith(javaHome,StringComparison.OrdinalIgnoreCase)).ToList();
                     }
 
-                    paths.Add(Path.Combine(selected, "bin"));
+                    javaBin = Path.Combine(selected, "bin");
+                    paths.Add(javaBin);
 
                     await _javaHomeAdapter.SetValue(selected, scope);
                     await _pathAdapter.SetValue(paths, scope);
                 }).ConfigureAwait(false);
 
-            AnsiConsole.MarkupLine("[yellow]The environment has been modified. You need to refresh it.[/]");
+            var shellType = _shellAdapter.GetShellType();
+            var refreshCommands = new List<string>();
+            switch (shellType)
+            {
+                case ShellType.PowerShell:
+                    refreshCommands.Add($"$env:JAVA_HOME=\"{javaHome}\"");
+                    refreshCommands.Add($"$env:PATH=\"{javaBin}{Path.PathSeparator}$($env:PATH)\"");
+                    break;
+                case ShellType.CommandPrompt:
+                    refreshCommands.Add($"set \"JAVA_HOME={javaHome}\"");
+                    refreshCommands.Add($"set \"PATH={javaBin}{Path.PathSeparator}%PATH%\"");
+                    break;
+            }
+
+            AnsiConsole.MarkupLine(refreshCommands.Count > 0
+                ? "[yellow]The environment has been modified. Apply modifications:[/]"
+                : "[yellow]The environment has been modified. You need to refresh it.[/]");
+
+            foreach (var line in refreshCommands)
+            {
+                Console.WriteLine(line);
+            }
             return 0;
         }
     }
