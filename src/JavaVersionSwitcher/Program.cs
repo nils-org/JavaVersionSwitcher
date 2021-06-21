@@ -61,6 +61,7 @@ namespace JavaVersionSwitcher
             container.Register<IPathAdapter, PathAdapter>(Lifestyle.Singleton);
             container.Register<IJavaInstallationsAdapter, JavaInstallationsAdapter>(Lifestyle.Singleton);
             container.Register<JavaInstallationsAdapterConfigurationProvider>(Lifestyle.Singleton);
+            container.Register<IShellAdapter, ShellAdapter>(Lifestyle.Singleton);
 
             container.Collection.Register<IConfigurationProvider>(
                 new[]
