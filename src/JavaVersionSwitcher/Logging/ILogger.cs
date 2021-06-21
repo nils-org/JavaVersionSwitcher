@@ -17,5 +17,11 @@
         /// </summary>
         /// <param name="text">The text to print.</param>
         void LogVerbose(string text);
+
+        /// <summary>
+        /// Logs a warning.
+        /// </summary>
+        /// <param name="text">The text to log.</param>
+        void LogWarning(string text);
     }
 }

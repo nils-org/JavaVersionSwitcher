@@ -14,8 +14,6 @@ BuildParameters.SetParameters(
   shouldRunDotNetCorePack: true,
   preferredBuildProviderType: BuildProviderType.GitHubActions,
   twitterMessage: standardNotificationMessage,
-  shouldRunCoveralls: false, // no tests, currently
-  shouldRunCodecov: false,
   shouldRunIntegrationTests: false);
 
 BuildParameters.PrintParameters(Context);

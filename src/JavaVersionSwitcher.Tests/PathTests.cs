@@ -2,8 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using JavaVersionSwitcher.Adapters;
-using JavaVersionSwitcher.Logging;
-using Moq;
 using Shouldly;
 using Xunit;
 
@@ -11,7 +9,7 @@ namespace JavaVersionSwitcher.Tests
 {
     public class PathTests
     {
-        private readonly PathAdapter _adapter = new PathAdapter(new Mock<ILogger>().Object);
+        private readonly PathAdapter _adapter = new PathAdapter();
 
         [Fact]
         public async Task Can_Set_per_process()

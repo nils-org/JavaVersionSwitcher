@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Xml.Serialization;
 using JavaVersionSwitcher.Logging;
 using JavaVersionSwitcher.Models;
+using JavaVersionSwitcher.Services;
 using Spectre.Console;
 
 namespace JavaVersionSwitcher.Adapters
@@ -16,16 +17,26 @@ namespace JavaVersionSwitcher.Adapters
     public class JavaInstallationsAdapter : IJavaInstallationsAdapter
     {
         private readonly ILogger _logger;
+        private readonly IConfigurationService _configurationService;
+        private readonly JavaInstallationsAdapterConfigurationProvider _configurationProvider;
+        private readonly IStorageAdapter _storageAdapter;
 
-        public JavaInstallationsAdapter(ILogger logger)
+        public JavaInstallationsAdapter(
+            ILogger logger,
+            IConfigurationService configurationService,
+            JavaInstallationsAdapterConfigurationProvider configurationProvider,
+            IStorageAdapter storageAdapter)
         {
             _logger = logger;
+            _configurationService = configurationService;
+            _configurationProvider = configurationProvider;
+            _storageAdapter = storageAdapter;
         }
         
         /// <inheritdoc cref="IJavaInstallationsAdapter.GetJavaInstallations"/>
         public async Task<IEnumerable<JavaInstallation>> GetJavaInstallations(bool forceReScan = false)
         {
-            if (!forceReScan && HasRecentCacheData())
+            if (!forceReScan && await HasRecentCacheData())
             {
                 try
                 {
@@ -51,9 +62,12 @@ namespace JavaVersionSwitcher.Adapters
             return data;
         }
 
+        
+
+        
         private async Task SaveCacheData(IEnumerable<JavaInstallation> data)
         {
-            var file = GetCacheFileName();
+            var file = _storageAdapter.JavaInstallationCacheFilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var serializer = new XmlSerializer(typeof(JavaInstallation[]));
             await using var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -64,7 +78,7 @@ namespace JavaVersionSwitcher.Adapters
 
         private async Task<IEnumerable<JavaInstallation>> LoadCacheData()
         {
-            var file = GetCacheFileName();
+            var file = _storageAdapter.JavaInstallationCacheFilePath;
             var serializer = new XmlSerializer(typeof(JavaInstallation[]));
             await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -72,26 +86,17 @@ namespace JavaVersionSwitcher.Adapters
             return (JavaInstallation[])serializer.Deserialize(reader);
         }
 
-        private bool HasRecentCacheData()
+        private async Task<bool> HasRecentCacheData()
         {
-            var fileName = GetCacheFileName();
+            var fileName = _storageAdapter.JavaInstallationCacheFilePath;
             var file = new FileInfo(fileName);
             if (!file.Exists)
             {
                 return false;
             }
 
-            // TODO: Configure Timeout?
-            return file.LastWriteTime.AddDays(7) >= DateTime.Now;
-        }
-
-        private string GetCacheFileName()
-        {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var app = typeof(JavaInstallation).Assembly.GetName().Name ?? "JavaVersionSwitcher";
-            const string file = "installations.xml";
-            
-            return Path.Combine(appData, app, file);
+            var timeout = await _configurationProvider.GetCacheTimeout(_configurationService);
+            return file.LastWriteTime.AddDays(timeout) >= DateTime.Now;
         }
 
         private async Task<IEnumerable<JavaInstallation>> ForceScan()
@@ -104,13 +109,12 @@ namespace JavaVersionSwitcher.Adapters
                     ctx.Spinner(Spinner.Known.Star);
                     ctx.SpinnerStyle(Style.Parse("green"));
 
-                    // todo configurable start paths?
-                    var start = new[]
-                        {
-                            Environment.ExpandEnvironmentVariables("%ProgramW6432%"),
-                            Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%")
-                        }.Distinct()
-                        .Where(x => !string.IsNullOrEmpty(x));
+                    var start =
+                        (await _configurationProvider.GetStartPaths(_configurationService))
+                        .Select(Environment.ExpandEnvironmentVariables)
+                        .Distinct()
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .ToList();
                     _logger.LogVerbose(
                         $@"Scanning for installations in:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", start)}");
                     

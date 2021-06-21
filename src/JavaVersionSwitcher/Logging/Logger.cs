@@ -15,5 +15,10 @@ namespace JavaVersionSwitcher.Logging
             
             AnsiConsole.MarkupLine($"[gray]{text}[/]");
         }
+
+        public void LogWarning(string text)
+        {
+            AnsiConsole.MarkupLine($"[yellow]WARNING: {text}[/]");
+        }
     }
 }
