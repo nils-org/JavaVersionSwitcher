@@ -5,7 +5,7 @@
     <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
-
+  
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)/../../README.md" PackagePath="" Pack="true" />
     <None Include="$(MSBuildProjectDirectory)/../../res/logo/logo-128.png" PackagePath="" Pack="true" />
@@ -37,9 +37,9 @@
   
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="5.0.2" />
     <PackageReference Include="SimpleInjector" Version="5.3.1" />
     <PackageReference Include="Spectre.Console" Version="0.40.0" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="5.0.1" />
   </ItemGroup>
 
 </Project>

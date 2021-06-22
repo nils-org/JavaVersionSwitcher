@@ -41,6 +41,8 @@ namespace JavaVersionSwitcher
                     .WithDescription("get configuration options.");
                 cfg.AddCommand<SetConfigCommand>("set")
                     .WithDescription("set configuration options.");
+                cfg.AddCommand<ShowConfigCommand>("show")
+                    .WithDescription("show possible configuration options.");
             });
 
 #if DEBUG

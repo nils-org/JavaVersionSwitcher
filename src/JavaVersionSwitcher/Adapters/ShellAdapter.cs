@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using JavaVersionSwitcher.Logging;
 
 namespace JavaVersionSwitcher.Adapters
@@ -14,8 +15,14 @@ namespace JavaVersionSwitcher.Adapters
             _logger = logger;
         }
         
+        
         public ShellType GetShellType()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return ShellType.Unknown;
+            }
+            
             try
             {
                 var proc = GetParentProcess(Process.GetCurrentProcess());
@@ -45,11 +52,20 @@ namespace JavaVersionSwitcher.Adapters
             }
         }
         
-        private static Process GetParentProcess(Process process) {
+        private static Process GetParentProcess(Process process) 
+        {
             return FindPidFromIndexedProcessName(FindIndexedProcessName(process.Id));
         }
         
-        private static string FindIndexedProcessName(int pid) {
+#pragma warning disable CA1416
+        private static string FindIndexedProcessName(int pid) 
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new NotImplementedException(
+                    "Accessing parent process is currently only available on windows.");
+            }
+    
             var processName = Process.GetProcessById(pid).ProcessName;
             var processesByName = Process.GetProcessesByName(processName);
             string processIndexedName = null;
@@ -66,8 +82,15 @@ namespace JavaVersionSwitcher.Adapters
         }
 
         private static Process FindPidFromIndexedProcessName(string indexedProcessName) {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new NotImplementedException(
+                    "Accessing parent process is currently only available on windows.");
+            }
+
             var parentId = new PerformanceCounter("Process", "Creating Process ID", indexedProcessName);
             return Process.GetProcessById((int) parentId.NextValue());
         }
+#pragma warning restore CA1416
     }
 }
