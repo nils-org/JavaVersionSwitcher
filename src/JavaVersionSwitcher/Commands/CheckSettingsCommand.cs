@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using JavaVersionSwitcher.Worker;
+using System.Threading.Tasks;
+using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Logging;
 using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -10,10 +11,28 @@ using Spectre.Console.Cli;
 namespace JavaVersionSwitcher.Commands
 {
     [UsedImplicitly]
-    internal sealed class CheckSettingsCommand : Command<CheckSettingsCommand.Settings>
+    internal sealed class CheckSettingsCommand : AsyncCommand<CheckSettingsCommand.Settings>
     {
+        private readonly IJavaHomeAdapter _javaHomeAdapter;
+        private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
+        private readonly IPathAdapter _pathAdapter;
+        private readonly ILogger _logger;
+
+        public CheckSettingsCommand(
+            IJavaHomeAdapter javaHomeAdapter,
+            IJavaInstallationsAdapter javaInstallationsAdapter,
+            IPathAdapter pathAdapter,
+            ILogger logger
+        )
+        {
+            _javaHomeAdapter = javaHomeAdapter;
+            _javaInstallationsAdapter = javaInstallationsAdapter;
+            _pathAdapter = pathAdapter;
+            _logger = logger;
+        }
+        
         [UsedImplicitly]
-        public sealed class Settings : CommandSettings
+        public sealed class Settings : CommonCommandSettings
         {
             /*
              TODO: Implement
@@ -24,53 +43,44 @@ namespace JavaVersionSwitcher.Commands
             */
         }
 
-        public override int Execute(CommandContext context, Settings settings)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
-            var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME");
+            _logger.PrintVerbose = settings.Verbose;
+            var javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
             if (string.IsNullOrEmpty(javaHome))
             {
                 AnsiConsole.MarkupLine("[red]JAVA_HOME is not set[/] JAVA_HOME needs to be set, for PATH check to work.");
                 return 1;
             }
-
-            IEnumerable<JavaInstallationScanner.JavaInstallation> javaInstallations = null;
-            AnsiConsole.Status()
-                .Start("Initializing...", ctx => 
-                {
-                    ctx.Status("Scanning");
-                    ctx.Spinner(Spinner.Known.Star);
-                    ctx.SpinnerStyle(Style.Parse("green"));
-
-                    javaInstallations = new JavaInstallationScanner().Scan()
-                        .ConfigureAwait(false)
-                        .GetAwaiter()
-                        .GetResult();
-                });
-            
-            var errors = false;
-            var paths = Environment.ExpandEnvironmentVariables("%PATH%")
-                .Split(";", StringSplitOptions.RemoveEmptyEntries);
-            
             AnsiConsole.MarkupLine("[green]JAVA_HOME[/]: "+javaHome);
-            var javaHomeBin = paths
-                .FirstOrDefault(x => x.Equals(javaHome + "bin")
-                                     || x.Equals(javaHome + Path.DirectorySeparatorChar + "bin"));
-            if (javaHomeBin == null)
+
+            var javaInstallations = await _javaInstallationsAdapter
+                .GetJavaInstallations()
+                .ConfigureAwait(false);
+            var paths = (await _pathAdapter.GetValue(EnvironmentScope.Process)).ToList();
+
+            var errors = false;
+            var javaHomeBin = Path.Combine(javaHome, "bin");
+            var javaHomeInPath = paths.FirstOrDefault(x =>
+                x.StartsWith(javaHomeBin, StringComparison.OrdinalIgnoreCase) &&
+                (x.Length == javaHomeBin.Length || x.Length == javaHomeBin.Length + 1)); 
+            if (javaHomeInPath != null)
+            {
+                AnsiConsole.MarkupLine("[green]JAVA_HOME\\bin is in PATH[/]: "+javaHomeInPath);    
+            }
+            else
             {
                 errors = true;
                 AnsiConsole.MarkupLine("[red]JAVA_HOME\\bin is not in PATH[/] JAVA_HOME\\bin needs to be in PATH.");
             }
-            else
-            {
-                AnsiConsole.MarkupLine("[green]JAVA_HOME is in PATH[/]: "+javaHomeBin);    
-            }
 
             foreach (var java in javaInstallations)
             {
-                var containedInPath = paths.Where(x => x.StartsWith(java.Location))
-                    .Where(x => !x.Equals(javaHomeBin));
+                var javaInstallationsInPath = paths
+                    .Where(x => x.StartsWith(java.Location, StringComparison.OrdinalIgnoreCase))
+                    .Where(x => !x.Equals(javaHomeInPath));
 
-                foreach (var path in containedInPath)
+                foreach (var path in javaInstallationsInPath)
                 {
                     errors = true;
                     AnsiConsole.MarkupLine($"[red]Additional java in PATH[/]: {path}");    

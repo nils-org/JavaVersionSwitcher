@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using JavaVersionSwitcher.Worker;
+using System.Threading.Tasks;
+using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Logging;
 using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -11,10 +13,31 @@ using Spectre.Console.Cli;
 namespace JavaVersionSwitcher.Commands
 {
     [UsedImplicitly]
-    internal sealed class SwitchVersionCommand : Command<SwitchVersionCommand.Settings>
+    internal sealed class SwitchVersionCommand : AsyncCommand<SwitchVersionCommand.Settings>
     {
+        private readonly IJavaHomeAdapter _javaHomeAdapter;
+        private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
+        private readonly IPathAdapter _pathAdapter;
+        private readonly ILogger _logger;
+        private readonly IShellAdapter _shellAdapter;
+
+        public SwitchVersionCommand(
+            IJavaHomeAdapter javaHomeAdapter,
+            IJavaInstallationsAdapter javaInstallationsAdapter,
+            IPathAdapter pathAdapter,
+            ILogger logger,
+            IShellAdapter shellAdapter
+        )
+        {
+            _javaHomeAdapter = javaHomeAdapter;
+            _javaInstallationsAdapter = javaInstallationsAdapter;
+            _pathAdapter = pathAdapter;
+            _logger = logger;
+            _shellAdapter = shellAdapter;
+        }
+        
         [UsedImplicitly]
-        public sealed class Settings : CommandSettings
+        public sealed class Settings : CommonCommandSettings
         {
             [CommandOption("--machine")]
             [DefaultValue(false)]
@@ -22,57 +45,69 @@ namespace JavaVersionSwitcher.Commands
             public bool MachineScope { get; [UsedImplicitly] set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
-            var worker = new JavaInstallationScanner();
-            IEnumerable<JavaInstallationScanner.JavaInstallation> installations = null;
-            AnsiConsole.Status()
-                .Start("Initializing...", ctx =>
-                {
-                    ctx.Status("Scanning");
-                    ctx.Spinner(Spinner.Known.Star);
-                    ctx.SpinnerStyle(Style.Parse("green"));
-
-                    installations = worker.Scan()
-                        .ConfigureAwait(false)
-                        .GetAwaiter()
-                        .GetResult();
-                });
+            _logger.PrintVerbose = settings.Verbose;
+            var installations = await _javaInstallationsAdapter
+                .GetJavaInstallations()
+                .ConfigureAwait(false);
 
             var selected = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Which java should be set?")
-                    .PageSize(20)
+                    .PageSize(25)
                     .MoreChoicesText("[grey](Move up and down to reveal more installations)[/]")
                     .AddChoices(installations.Select(x => x.Location).ToArray())
             );
 
-            AnsiConsole.Status()
-                .Start("Applying...", ctx =>
+            string javaHome = null;
+            string javaBin = null;
+            await AnsiConsole.Status()
+                .StartAsync("Applying...", async ctx =>
                 {
                     ctx.Spinner(Spinner.Known.Star);
                     ctx.SpinnerStyle(Style.Parse("green"));
 
-                    var target = settings.MachineScope
-                        ? EnvironmentVariableTarget.Machine
-                        : EnvironmentVariableTarget.User;
+                    var scope = settings.MachineScope
+                        ? EnvironmentScope.Machine
+                        : EnvironmentScope.User;
 
-                    var javaHome = Environment.GetEnvironmentVariable("JAVA_HOME", target);
-                    var paths = (Environment.GetEnvironmentVariable("PATH", target) ?? "")
-                        .Split(";", StringSplitOptions.RemoveEmptyEntries);
-                    var newPaths = paths.ToList();
+                    javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
+                    var paths = (await _pathAdapter.GetValue(scope)).ToList();
                     if (!string.IsNullOrEmpty(javaHome))
                     {
-                        newPaths = newPaths.Where(x => !x.StartsWith(javaHome)).ToList();
+                        paths = paths.Where(x => !x.StartsWith(javaHome,StringComparison.OrdinalIgnoreCase)).ToList();
                     }
 
-                    newPaths.Add(Path.Combine(selected, "bin"));
+                    javaBin = Path.Combine(selected, "bin");
+                    paths.Add(javaBin);
 
-                    Environment.SetEnvironmentVariable("JAVA_HOME", selected, target);
-                    Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, newPaths), target);
-                });
+                    await _javaHomeAdapter.SetValue(selected, scope);
+                    await _pathAdapter.SetValue(paths, scope);
+                }).ConfigureAwait(false);
 
-            AnsiConsole.MarkupLine("[yellow]The environment has been modified. You need to refresh it.[/]");
+            var shellType = _shellAdapter.GetShellType();
+            var refreshCommands = new List<string>();
+            switch (shellType)
+            {
+                case ShellType.PowerShell:
+                    refreshCommands.Add($"$env:JAVA_HOME=\"{javaHome}\"");
+                    refreshCommands.Add($"$env:PATH=\"{javaBin}{Path.PathSeparator}$($env:PATH)\"");
+                    break;
+                case ShellType.CommandPrompt:
+                    refreshCommands.Add($"set \"JAVA_HOME={javaHome}\"");
+                    refreshCommands.Add($"set \"PATH={javaBin}{Path.PathSeparator}%PATH%\"");
+                    break;
+            }
+
+            AnsiConsole.MarkupLine(refreshCommands.Count > 0
+                ? "[yellow]The environment has been modified. Apply modifications:[/]"
+                : "[yellow]The environment has been modified. You need to refresh it.[/]");
+
+            foreach (var line in refreshCommands)
+            {
+                Console.WriteLine(line);
+            }
             return 0;
         }
     }

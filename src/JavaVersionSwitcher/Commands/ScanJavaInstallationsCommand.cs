@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Linq;
-using JavaVersionSwitcher.Worker;
+using System.Threading.Tasks;
+using JavaVersionSwitcher.Adapters;
+using JavaVersionSwitcher.Logging;
 using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
@@ -9,10 +10,21 @@ using Spectre.Console.Cli;
 namespace JavaVersionSwitcher.Commands
 {
     [UsedImplicitly]
-    internal sealed class ScanJavaInstallationsCommand : Command<ScanJavaInstallationsCommand.Settings>
+    internal sealed class ScanJavaInstallationsCommand : AsyncCommand<ScanJavaInstallationsCommand.Settings>
     {
+        private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
+        private readonly ILogger _logger;
+
+        public ScanJavaInstallationsCommand(
+            IJavaInstallationsAdapter javaInstallationsAdapter,
+            ILogger logger)
+        {
+            _javaInstallationsAdapter = javaInstallationsAdapter;
+            _logger = logger;
+        }
+        
         [UsedImplicitly]
-        public sealed class Settings : CommandSettings
+        public sealed class Settings : CommonCommandSettings
         {
             [CommandOption("--force")]
             [DefaultValue(false)]
@@ -20,23 +32,12 @@ namespace JavaVersionSwitcher.Commands
             public bool Force { get; [UsedImplicitly] set; }
         }
 
-        public override int Execute(CommandContext context, Settings settings)
+        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
         {
-            var worker = new JavaInstallationScanner();
-            IEnumerable<JavaInstallationScanner.JavaInstallation> installations = null;
-            AnsiConsole.Status()
-                .Start("Initializing...", ctx => 
-                {
-                    ctx.Status("Scanning");
-                    ctx.Spinner(Spinner.Known.Star);
-                    ctx.SpinnerStyle(Style.Parse("green"));
-
-                    installations = worker.Scan(settings.Force)
-                        .ConfigureAwait(false)
-                        .GetAwaiter()
-                        .GetResult();
-                });
-
+            _logger.PrintVerbose = settings.Verbose;
+            var installations = await _javaInstallationsAdapter
+                .GetJavaInstallations(settings.Force)
+                .ConfigureAwait(false);
             var table = new Table();
             table.AddColumn("Java path");
             table.AddColumn("version");

@@ -22,7 +22,7 @@ jobs:
         os: [ windows-2019 ]
 
     env:
-      #COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       GITHUB_PAT: ${{ secrets.GH_TOKEN }}
       GPR_PASSWORD: ${{ secrets.GPR_PASSWORD }}
       GPR_USER: ${{ secrets.GPR_USER }}

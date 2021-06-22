@@ -6,21 +6,46 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
+using JavaVersionSwitcher.Logging;
+using JavaVersionSwitcher.Models;
+using JavaVersionSwitcher.Services;
+using Spectre.Console;
 
-#pragma warning disable CA1822
-namespace JavaVersionSwitcher.Worker
+namespace JavaVersionSwitcher.Adapters
 {
-    public class JavaInstallationScanner
+    /// <inheritdoc cref="IJavaInstallationsAdapter"/>
+    public class JavaInstallationsAdapter : IJavaInstallationsAdapter
     {
-        public async Task<IEnumerable<JavaInstallation>> Scan(bool force = false)
+        private readonly ILogger _logger;
+        private readonly IConfigurationService _configurationService;
+        private readonly JavaInstallationsAdapterConfigurationProvider _configurationProvider;
+        private readonly IStorageAdapter _storageAdapter;
+
+        public JavaInstallationsAdapter(
+            ILogger logger,
+            IConfigurationService configurationService,
+            JavaInstallationsAdapterConfigurationProvider configurationProvider,
+            IStorageAdapter storageAdapter)
         {
-            if (!force && HasRecentCacheData())
+            _logger = logger;
+            _configurationService = configurationService;
+            _configurationProvider = configurationProvider;
+            _storageAdapter = storageAdapter;
+        }
+        
+        /// <inheritdoc cref="IJavaInstallationsAdapter.GetJavaInstallations"/>
+        public async Task<IEnumerable<JavaInstallation>> GetJavaInstallations(bool forceReScan = false)
+        {
+            if (!forceReScan && await HasRecentCacheData())
             {
                 try
                 {
                     return await LoadCacheData();
                 }
-                catch {/* TODO: Log?? */}
+                catch (Exception ex)
+                {
+                    _logger.LogVerbose($"{ex.GetType().Name} while reading cached data.");
+                }
             }
 
             var data = (await ForceScan()).ToList();
@@ -28,14 +53,21 @@ namespace JavaVersionSwitcher.Worker
             try
             {
                 await SaveCacheData(data);
-            } catch {/* TODO: Log?? */}
+            } 
+            catch (Exception ex)
+            {
+                _logger.LogVerbose($"{ex.GetType().Name} while writing data cache.");
+            }
 
             return data;
         }
 
+        
+
+        
         private async Task SaveCacheData(IEnumerable<JavaInstallation> data)
         {
-            var file = GetCacheFileName();
+            var file = _storageAdapter.JavaInstallationCacheFilePath;
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             var serializer = new XmlSerializer(typeof(JavaInstallation[]));
             await using var stream = new FileStream(file, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -46,7 +78,7 @@ namespace JavaVersionSwitcher.Worker
 
         private async Task<IEnumerable<JavaInstallation>> LoadCacheData()
         {
-            var file = GetCacheFileName();
+            var file = _storageAdapter.JavaInstallationCacheFilePath;
             var serializer = new XmlSerializer(typeof(JavaInstallation[]));
             await using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read);
             using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -54,51 +86,52 @@ namespace JavaVersionSwitcher.Worker
             return (JavaInstallation[])serializer.Deserialize(reader);
         }
 
-        private bool HasRecentCacheData()
+        private async Task<bool> HasRecentCacheData()
         {
-            var fileName = GetCacheFileName();
+            var fileName = _storageAdapter.JavaInstallationCacheFilePath;
             var file = new FileInfo(fileName);
             if (!file.Exists)
             {
                 return false;
             }
 
-            // TODO: Configure Timeout?
-            return file.LastWriteTime.AddDays(7) >= DateTime.Now;
-        }
-
-        private string GetCacheFileName()
-        {
-            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            var app = typeof(JavaInstallation).Assembly.GetName().Name ?? "JavaVersionSwitcher";
-            const string file = "installations.xml";
-            
-            return Path.Combine(appData, app, file);
+            var timeout = await _configurationProvider.GetCacheTimeout(_configurationService);
+            return file.LastWriteTime.AddDays(timeout) >= DateTime.Now;
         }
 
         private async Task<IEnumerable<JavaInstallation>> ForceScan()
         {
-            // todo configurable start paths?
-            var start = new[]
-                {
-                    Environment.ExpandEnvironmentVariables("%ProgramW6432%"),
-                    Environment.ExpandEnvironmentVariables("%ProgramFiles(x86)%")
-                }.Distinct()
-                .Where(x => !string.IsNullOrEmpty(x));
-            var javaExeFiles = await FindFileRecursive(start);
             var result = new List<JavaInstallation>();
-            foreach (var javaExeFile in javaExeFiles)
-            {
-                var (version, fullVersion) = await GetVersion(javaExeFile).ConfigureAwait(false); 
-                var installation = new JavaInstallation
+            await AnsiConsole.Status()
+                .StartAsync("Initializing...", async ctx => 
                 {
-                    Location = Directory.GetParent(javaExeFile)?.Parent?.FullName,
-                    Version = version,
-                    FullVersion = fullVersion
-                };
-                result.Add(installation);
-            }
+                    ctx.Status("Scanning for java installations");
+                    ctx.Spinner(Spinner.Known.Star);
+                    ctx.SpinnerStyle(Style.Parse("green"));
 
+                    var start =
+                        (await _configurationProvider.GetStartPaths(_configurationService))
+                        .Select(Environment.ExpandEnvironmentVariables)
+                        .Distinct()
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .ToList();
+                    _logger.LogVerbose(
+                        $@"Scanning for installations in:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", start)}");
+                    
+                    var javaExeFiles = await FindFileRecursive(start);
+                    foreach (var javaExeFile in javaExeFiles)
+                    {
+                        var (version, fullVersion) = await GetVersion(javaExeFile).ConfigureAwait(false); 
+                        var installation = new JavaInstallation
+                        {
+                            Location = Directory.GetParent(javaExeFile)?.Parent?.FullName,
+                            Version = version,
+                            FullVersion = fullVersion
+                        };
+                        result.Add(installation);
+                    }
+                }).ConfigureAwait(false);
+            
             return result;
         }
 
@@ -112,7 +145,6 @@ namespace JavaVersionSwitcher.Worker
                 var results = new List<string>();
                 while (queue.TryDequeue(out var item))
                 {
-                    // log ? Console.WriteLine("Checking: "+item);
                     try
                     {
                         results.AddRange(Directory.GetFiles(item, "java.exe", SearchOption.TopDirectoryOnly));
@@ -122,9 +154,9 @@ namespace JavaVersionSwitcher.Worker
                             queue.Enqueue(subfolder);
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // log?!
+                        _logger.LogVerbose($"{ex.GetType().Name} while accessing {item}");
                     }
                 }
 
@@ -163,18 +195,5 @@ namespace JavaVersionSwitcher.Worker
             proc.WaitForExit();
             return new Tuple<string, string>(version, fullVersion.ToString());
         }
-
-        [Serializable]
-        [DebuggerDisplay("{" + nameof(Version) + "}")]
-        public class JavaInstallation
-        {
-            public string Location { get; set; }
-
-            [XmlAttribute]
-            public string Version { get; set; }
-            
-            public string FullVersion { get; set; }
-        }
     }
 }
-#pragma warning restore CA1822
