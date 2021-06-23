@@ -12,7 +12,7 @@ namespace JavaVersionSwitcher.Adapters
         public string ConfigurationFilePath => GetPath("settings.xml");
 
         /// <inheritdoc cref="IStorageAdapter.JavaInstallationCacheFilePath"/>
-        public string JavaInstallationCacheFilePath => GetPath("");
+        public string JavaInstallationCacheFilePath => GetPath("installations.xml");
 
         private string GetPath(string fileName)
         {

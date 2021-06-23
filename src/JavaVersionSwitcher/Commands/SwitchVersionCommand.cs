@@ -52,15 +52,13 @@ namespace JavaVersionSwitcher.Commands
                 .GetJavaInstallations()
                 .ConfigureAwait(false);
 
-            var selected = AnsiConsole.Prompt(
+            var newJavaHome = AnsiConsole.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Which java should be set?")
                     .PageSize(25)
                     .MoreChoicesText("[grey](Move up and down to reveal more installations)[/]")
-                    .AddChoices(installations.Select(x => x.Location).ToArray())
-            );
-
-            string javaHome = null;
+                    .AddChoices(installations.Select(x => x.Location).ToArray()));
+            
             string javaBin = null;
             await AnsiConsole.Status()
                 .StartAsync("Applying...", async ctx =>
@@ -72,17 +70,17 @@ namespace JavaVersionSwitcher.Commands
                         ? EnvironmentScope.Machine
                         : EnvironmentScope.User;
 
-                    javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
+                    var oldJavaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
                     var paths = (await _pathAdapter.GetValue(scope)).ToList();
-                    if (!string.IsNullOrEmpty(javaHome))
+                    if (!string.IsNullOrEmpty(oldJavaHome))
                     {
-                        paths = paths.Where(x => !x.StartsWith(javaHome,StringComparison.OrdinalIgnoreCase)).ToList();
+                        paths = paths.Where(x => !x.StartsWith(oldJavaHome,StringComparison.OrdinalIgnoreCase)).ToList();
                     }
 
-                    javaBin = Path.Combine(selected, "bin");
+                    javaBin = Path.Combine(newJavaHome, "bin");
                     paths.Add(javaBin);
 
-                    await _javaHomeAdapter.SetValue(selected, scope);
+                    await _javaHomeAdapter.SetValue(newJavaHome, scope);
                     await _pathAdapter.SetValue(paths, scope);
                 }).ConfigureAwait(false);
 
@@ -91,11 +89,11 @@ namespace JavaVersionSwitcher.Commands
             switch (shellType)
             {
                 case ShellType.PowerShell:
-                    refreshCommands.Add($"$env:JAVA_HOME=\"{javaHome}\"");
+                    refreshCommands.Add($"$env:JAVA_HOME=\"{newJavaHome}\"");
                     refreshCommands.Add($"$env:PATH=\"{javaBin}{Path.PathSeparator}$($env:PATH)\"");
                     break;
                 case ShellType.CommandPrompt:
-                    refreshCommands.Add($"set \"JAVA_HOME={javaHome}\"");
+                    refreshCommands.Add($"set \"JAVA_HOME={newJavaHome}\"");
                     refreshCommands.Add($"set \"PATH={javaBin}{Path.PathSeparator}%PATH%\"");
                     break;
             }
