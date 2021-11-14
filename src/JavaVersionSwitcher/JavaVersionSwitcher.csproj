@@ -37,7 +37,7 @@
   
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="5.0.2" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
     <PackageReference Include="SimpleInjector" Version="5.3.2" />
     <PackageReference Include="Spectre.Console" Version="0.42.0" />
   </ItemGroup>
