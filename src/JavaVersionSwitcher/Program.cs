@@ -5,6 +5,7 @@ using JavaVersionSwitcher.Logging;
 using JavaVersionSwitcher.Services;
 using JetBrains.Annotations;
 using SimpleInjector;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace JavaVersionSwitcher
@@ -26,6 +27,16 @@ namespace JavaVersionSwitcher
             config.AddExample(new[] { "scan", "--force" });
             config.AddExample(new[] { "switch" });
 
+            config.SetExceptionHandler(ex =>
+            {
+#if DEBUG
+                AnsiConsole.WriteException(ex, ExceptionFormats.ShowLinks);
+#else
+                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+#endif
+                return -1;
+            });
+
             config.AddCommand<ScanJavaInstallationsCommand>("scan")
                 .WithAlias("scan-for-java")
                 .WithDescription("Scan for existing java installations.");
@@ -46,7 +57,6 @@ namespace JavaVersionSwitcher
             });
 
 #if DEBUG
-            config.PropagateExceptions();
             config.ValidateExamples();
 #endif
         }
@@ -54,6 +64,7 @@ namespace JavaVersionSwitcher
         private static ITypeRegistrar BuildRegistrar()
         {
             var container = new Container();
+            container.Options.ResolveUnregisteredConcreteTypes = true;
             container.Register<ILogger, Logger>(Lifestyle.Singleton);
 
             container.Register<IConfigurationService, ConfigurationService>(Lifestyle.Singleton);

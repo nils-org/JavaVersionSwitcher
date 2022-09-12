@@ -1,6 +1,5 @@
 ﻿using JavaVersionSwitcher.Logging;
 using Shouldly;
-using Spectre.Console;
 using Spectre.Console.Testing;
 using Xunit;
 
@@ -8,12 +7,13 @@ namespace JavaVersionSwitcher.Tests
 {
     public class LoggerTests
     {
-        private readonly TestConsole _console = new TestConsole();
-        private readonly ILogger _logger = new Logger();
+        private readonly TestConsole _console;
+        private readonly ILogger _logger;
 
         public LoggerTests()
         {
-            AnsiConsole.Console = _console;
+            _console = new TestConsole();
+            _logger = new Logger(_console);
         }
         
         [Fact]

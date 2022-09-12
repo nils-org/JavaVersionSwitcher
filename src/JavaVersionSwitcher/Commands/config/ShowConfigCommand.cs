@@ -17,15 +17,18 @@ namespace JavaVersionSwitcher.Commands.config
         private readonly ILogger _logger;
         private readonly IConfigurationService _service;
         private readonly IEnumerable<IConfigurationProvider> _providers;
+        private readonly IAnsiConsole _console;
 
         public ShowConfigCommand(
             ILogger logger,
             IConfigurationService service,
-            IEnumerable<IConfigurationProvider> providers)
+            IEnumerable<IConfigurationProvider> providers,
+            IAnsiConsole console)
         {
             _logger = logger;
             _service = service;
             _providers = providers;
+            _console = console;
         }
         
         [UsedImplicitly]
@@ -73,14 +76,14 @@ namespace JavaVersionSwitcher.Commands.config
                 p.ProviderName.Equals(settingsProvider, StringComparison.OrdinalIgnoreCase));
             if (provider == null)
             {
-                AnsiConsole.MarkupLine($"[red]No provider named {settingsProvider}[/]");
+                _console.MarkupLine($"[red]No provider named {settingsProvider}[/]");
                 return await Task.FromResult(1);
             }
             
             _logger.LogVerbose($"Listing setting for {provider.ProviderName}:");
             foreach (var setting in provider.Settings.OrderBy(x => x))
             {
-                AnsiConsole.WriteLine(setting);
+                _console.WriteLine(setting);
             }
             
             return await Task.FromResult(0);
@@ -102,7 +105,7 @@ namespace JavaVersionSwitcher.Commands.config
                 }
             }
             
-            AnsiConsole.Render(table);
+            _console.Write(table);
             return 0;
         }
 
@@ -110,7 +113,7 @@ namespace JavaVersionSwitcher.Commands.config
         {
             foreach (var name in _providers.Select(p => p.ProviderName).OrderBy(x => x))
             {
-                AnsiConsole.WriteLine(name);
+                _console.WriteLine(name);
             }
             
             return await Task.FromResult(0);
