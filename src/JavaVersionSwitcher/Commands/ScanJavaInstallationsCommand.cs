@@ -14,13 +14,16 @@ namespace JavaVersionSwitcher.Commands
     {
         private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
         private readonly ILogger _logger;
+        private readonly IAnsiConsole _console;
 
         public ScanJavaInstallationsCommand(
             IJavaInstallationsAdapter javaInstallationsAdapter,
-            ILogger logger)
+            ILogger logger,
+            IAnsiConsole console)
         {
             _javaInstallationsAdapter = javaInstallationsAdapter;
             _logger = logger;
+            _console = console;
         }
         
         [UsedImplicitly]
@@ -48,7 +51,7 @@ namespace JavaVersionSwitcher.Commands
                 table.AddRow(javaInstallation.Location, javaInstallation.Version ?? "unknown");
             }
 
-            AnsiConsole.Render(table);
+            _console.Write(table);
             return 0;
         }
     }

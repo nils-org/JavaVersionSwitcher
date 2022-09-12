@@ -12,17 +12,22 @@ namespace JavaVersionSwitcher.Tests.Fixtures
 {
     public class CommandFixture
     {
-        public TestConsole Console => new TestConsole();
+        public CommandFixture()
+        {
+            Logger = new Logger(Console);
+        }
         
-        public Logger Logger => new Logger();
+        public TestConsole Console { get; } = new TestConsole();
         
-        public TestConfigurationService ConfigurationService => new TestConfigurationService();
+        public Logger Logger { get; }
         
-        public Mock<IJavaHomeAdapter> JavaHomeAdapter => new Mock<IJavaHomeAdapter>();
+        public TestConfigurationService ConfigurationService { get; } = new TestConfigurationService();
         
-        public Mock<IPathAdapter> PathAdapter => new Mock<IPathAdapter>();
+        public Mock<IJavaHomeAdapter> JavaHomeAdapter { get; } = new Mock<IJavaHomeAdapter>();
         
-        public Mock<IJavaInstallationsAdapter> JavaInstallationsAdapter => new Mock<IJavaInstallationsAdapter>();
+        public Mock<IPathAdapter> PathAdapter { get; } = new Mock<IPathAdapter>();
+        
+        public Mock<IJavaInstallationsAdapter> JavaInstallationsAdapter { get; } = new Mock<IJavaInstallationsAdapter>();
         
         private ITypeRegistrar BuildRegistrar()
         {

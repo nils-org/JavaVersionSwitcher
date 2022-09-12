@@ -17,18 +17,21 @@ namespace JavaVersionSwitcher.Commands
         private readonly IJavaInstallationsAdapter _javaInstallationsAdapter;
         private readonly IPathAdapter _pathAdapter;
         private readonly ILogger _logger;
+        private readonly IAnsiConsole _console;
 
         public CheckSettingsCommand(
             IJavaHomeAdapter javaHomeAdapter,
             IJavaInstallationsAdapter javaInstallationsAdapter,
             IPathAdapter pathAdapter,
-            ILogger logger
+            ILogger logger,
+            IAnsiConsole console
         )
         {
             _javaHomeAdapter = javaHomeAdapter;
             _javaInstallationsAdapter = javaInstallationsAdapter;
             _pathAdapter = pathAdapter;
             _logger = logger;
+            _console = console;
         }
         
         [UsedImplicitly]
@@ -49,10 +52,10 @@ namespace JavaVersionSwitcher.Commands
             var javaHome = await _javaHomeAdapter.GetValue(EnvironmentScope.Process);
             if (string.IsNullOrEmpty(javaHome))
             {
-                AnsiConsole.MarkupLine("[red]JAVA_HOME is not set[/] JAVA_HOME needs to be set, for PATH check to work.");
+                _console.MarkupLine("[red]JAVA_HOME is not set[/] JAVA_HOME needs to be set, for PATH check to work.");
                 return 1;
             }
-            AnsiConsole.MarkupLine("[green]JAVA_HOME[/]: "+javaHome);
+            _console.MarkupLine("[green]JAVA_HOME[/]: "+javaHome);
 
             var javaInstallations = await _javaInstallationsAdapter
                 .GetJavaInstallations()
@@ -66,12 +69,12 @@ namespace JavaVersionSwitcher.Commands
                 (x.Length == javaHomeBin.Length || x.Length == javaHomeBin.Length + 1)); 
             if (javaHomeInPath != null)
             {
-                AnsiConsole.MarkupLine("[green]JAVA_HOME\\bin is in PATH[/]: "+javaHomeInPath);    
+                _console.MarkupLine("[green]JAVA_HOME\\bin is in PATH[/]: "+javaHomeInPath);    
             }
             else
             {
                 errors = true;
-                AnsiConsole.MarkupLine("[red]JAVA_HOME\\bin is not in PATH[/] JAVA_HOME\\bin needs to be in PATH.");
+                _console.MarkupLine("[red]JAVA_HOME\\bin is not in PATH[/] JAVA_HOME\\bin needs to be in PATH.");
             }
 
             foreach (var java in javaInstallations)
@@ -83,14 +86,14 @@ namespace JavaVersionSwitcher.Commands
                 foreach (var path in javaInstallationsInPath)
                 {
                     errors = true;
-                    AnsiConsole.MarkupLine($"[red]Additional java in PATH[/]: {path}");    
+                    _console.MarkupLine($"[red]Additional java in PATH[/]: {path}");    
                 }
             }
             
             if (errors)
             {
-                AnsiConsole.MarkupLine("[yellow]There were errors.[/]");
-                AnsiConsole.MarkupLine("[yellow]Fixing errors is not implemented. You need to fix them manually![/]");
+                _console.MarkupLine("[yellow]There were errors.[/]");
+                _console.MarkupLine("[yellow]Fixing errors is not implemented. You need to fix them manually![/]");
                 return 1;
             }
 

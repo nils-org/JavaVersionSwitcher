@@ -4,6 +4,13 @@ namespace JavaVersionSwitcher.Logging
 {
     public class Logger : ILogger
     {
+        private readonly IAnsiConsole _console;
+
+        public Logger(IAnsiConsole console)
+        {
+            _console = console;
+        }
+        
         public bool PrintVerbose { get; set; }
         
         public void LogVerbose(string text)
@@ -13,12 +20,12 @@ namespace JavaVersionSwitcher.Logging
                 return;
             }
             
-            AnsiConsole.MarkupLine($"[gray]{text}[/]");
+            _console.MarkupLine($"[gray]{text}[/]");
         }
 
         public void LogWarning(string text)
         {
-            AnsiConsole.MarkupLine($"[yellow]WARNING: {text}[/]");
+            _console.MarkupLine($"[yellow]WARNING: {text}[/]");
         }
     }
 }

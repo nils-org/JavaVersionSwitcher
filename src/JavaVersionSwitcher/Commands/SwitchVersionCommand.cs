@@ -20,13 +20,15 @@ namespace JavaVersionSwitcher.Commands
         private readonly IPathAdapter _pathAdapter;
         private readonly ILogger _logger;
         private readonly IShellAdapter _shellAdapter;
+        private readonly IAnsiConsole _console;
 
         public SwitchVersionCommand(
             IJavaHomeAdapter javaHomeAdapter,
             IJavaInstallationsAdapter javaInstallationsAdapter,
             IPathAdapter pathAdapter,
             ILogger logger,
-            IShellAdapter shellAdapter
+            IShellAdapter shellAdapter,
+            IAnsiConsole console
         )
         {
             _javaHomeAdapter = javaHomeAdapter;
@@ -34,6 +36,7 @@ namespace JavaVersionSwitcher.Commands
             _pathAdapter = pathAdapter;
             _logger = logger;
             _shellAdapter = shellAdapter;
+            _console = console;
         }
         
         [UsedImplicitly]
@@ -52,7 +55,7 @@ namespace JavaVersionSwitcher.Commands
                 .GetJavaInstallations()
                 .ConfigureAwait(false);
 
-            var newJavaHome = AnsiConsole.Prompt(
+            var newJavaHome = _console.Prompt(
                 new SelectionPrompt<string>()
                     .Title("Which java should be set?")
                     .PageSize(25)
@@ -60,7 +63,7 @@ namespace JavaVersionSwitcher.Commands
                     .AddChoices(installations.Select(x => x.Location).ToArray()));
             
             string javaBin = null;
-            await AnsiConsole.Status()
+            await _console.Status()
                 .StartAsync("Applying...", async ctx =>
                 {
                     ctx.Spinner(Spinner.Known.Star);
@@ -98,13 +101,13 @@ namespace JavaVersionSwitcher.Commands
                     break;
             }
 
-            AnsiConsole.MarkupLine(refreshCommands.Count > 0
+            _console.MarkupLine(refreshCommands.Count > 0
                 ? "[yellow]The environment has been modified. Apply modifications:[/]"
                 : "[yellow]The environment has been modified. You need to refresh it.[/]");
 
             foreach (var line in refreshCommands)
             {
-                Console.WriteLine(line);
+                _console.WriteLine(line);
             }
             return 0;
         }

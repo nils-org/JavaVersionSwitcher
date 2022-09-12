@@ -20,17 +20,20 @@ namespace JavaVersionSwitcher.Adapters
         private readonly IConfigurationService _configurationService;
         private readonly JavaInstallationsAdapterConfigurationProvider _configurationProvider;
         private readonly IStorageAdapter _storageAdapter;
+        private readonly IAnsiConsole _console;
 
         public JavaInstallationsAdapter(
             ILogger logger,
             IConfigurationService configurationService,
             JavaInstallationsAdapterConfigurationProvider configurationProvider,
-            IStorageAdapter storageAdapter)
+            IStorageAdapter storageAdapter,
+            IAnsiConsole console)
         {
             _logger = logger;
             _configurationService = configurationService;
             _configurationProvider = configurationProvider;
             _storageAdapter = storageAdapter;
+            _console = console;
         }
         
         /// <inheritdoc cref="IJavaInstallationsAdapter.GetJavaInstallations"/>
@@ -102,7 +105,7 @@ namespace JavaVersionSwitcher.Adapters
         private async Task<IEnumerable<JavaInstallation>> ForceScan()
         {
             var result = new List<JavaInstallation>();
-            await AnsiConsole.Status()
+            await _console.Status()
                 .StartAsync("Initializing...", async ctx => 
                 {
                     ctx.Status("Scanning for java installations");
