@@ -1,27 +1,26 @@
-﻿namespace JavaVersionSwitcher.Logging
+﻿namespace JavaVersionSwitcher.Logging;
+
+/// <summary>
+/// The internal logger
+/// </summary>
+public interface ILogger
 {
     /// <summary>
-    /// The internal logger
+    /// Verbose messages will be printed,
+    /// only if this is set to <c>true</c>
     /// </summary>
-    public interface ILogger
-    {
-        /// <summary>
-        /// Verbose messages will be printed,
-        /// only if this is set to <c>true</c>
-        /// </summary>
-        bool PrintVerbose { get; set; }
+    bool PrintVerbose { get; set; }
         
-        /// <summary>
-        /// Log a verbose message.
-        /// See also <see cref="PrintVerbose"/>.
-        /// </summary>
-        /// <param name="text">The text to print.</param>
-        void LogVerbose(string text);
+    /// <summary>
+    /// Log a verbose message.
+    /// See also <see cref="PrintVerbose"/>.
+    /// </summary>
+    /// <param name="text">The text to print.</param>
+    void LogVerbose(string text);
 
-        /// <summary>
-        /// Logs a warning.
-        /// </summary>
-        /// <param name="text">The text to log.</param>
-        void LogWarning(string text);
-    }
+    /// <summary>
+    /// Logs a warning.
+    /// </summary>
+    /// <param name="text">The text to log.</param>
+    void LogWarning(string text);
 }

@@ -1,7 +1,6 @@
-﻿namespace JavaVersionSwitcher.Adapters
+﻿namespace JavaVersionSwitcher.Adapters;
+
+public interface IShellAdapter
 {
-    public interface IShellAdapter
-    {
-        ShellType GetShellType();
-    }
+    ShellType GetShellType();
 }
