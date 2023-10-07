@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ public class RegistryAdapter : IRegistryAdapter
         return AsyncRegistryKey.Hklm;
     }
 
-    internal class AsyncRegistryKey
+    internal class AsyncRegistryKey : IDisposable
     {
 #pragma warning disable CA1416
         private readonly RegistryKey _key;
@@ -70,19 +71,24 @@ public class RegistryAdapter : IRegistryAdapter
         {
             return _key.ToString();
         }
+
+        public void Dispose()
+        {
+            _key?.Dispose();
+        }
 #pragma warning restore CA1416
     }
 
-    public async IAsyncEnumerable<string> GetInstallationPaths()
+    public async IAsyncEnumerable<IJavaRegistryRegistration> GetInstallations()
     {
-        var localMachine = await GetHklmAsync();
+        using var localMachine = await GetHklmAsync();
         if (localMachine == null)
         {
             _logger.LogVerbose($"Not Checking the registry, since we're running on {RuntimeInformation.RuntimeIdentifier}");
             yield break;
         }
 
-        var javaSoft = await localMachine.OpenSubKey("SOFTWARE\\JavaSoft");
+        using var javaSoft = await localMachine.OpenSubKey("SOFTWARE\\JavaSoft");
         if (javaSoft == null)
         {
             _logger.LogWarning(@"RegKey 'HKLM\Software\JavaSoft' does not exist.");
@@ -99,20 +105,20 @@ public class RegistryAdapter : IRegistryAdapter
 
         foreach (var root in roots)
         {
-            var rootKey = await javaSoft.OpenSubKey(root);
+            using var rootKey = await javaSoft.OpenSubKey(root);
             if (rootKey == null)
             {
                 continue;
             }
-            
-            var keyNames = await rootKey.GetSubKeyNames();
-            foreach (var name in keyNames)
+
+            var versions = await rootKey.GetSubKeyNames();
+            foreach (var javaVersion in versions)
             {
-                _logger.LogVerbose($"Checking SubKey: {rootKey}\\{name}");
-                var key = await rootKey.OpenSubKey(name);
+                _logger.LogVerbose($"Checking SubKey: {rootKey}\\{javaVersion}");
+                using var key = await rootKey.OpenSubKey(javaVersion);
                 if (key == null)
                 {
-                    _logger.LogWarning($"SubKey '{rootKey}\\{name}' was reported to exist, but it does not.");
+                    _logger.LogWarning($"SubKey '{rootKey}\\{javaVersion}' was reported to exist, but it does not.");
                     continue;
                 }
                 
@@ -121,8 +127,20 @@ public class RegistryAdapter : IRegistryAdapter
                     continue;
                 }
 
-                yield return javaHome;
+                yield return new JavaRegistryRegistration
+                {
+                    RegKey = key.ToString(),
+                    InstallationPath = javaHome,
+                    Version = javaVersion,
+                };
             }
         }
+    }
+
+    private class JavaRegistryRegistration : IJavaRegistryRegistration
+    {
+        public string RegKey { get; init; }
+        public string InstallationPath { get; init; }
+        public string Version { get; init; }
     }
 }
