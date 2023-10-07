@@ -4,5 +4,14 @@ namespace JavaVersionSwitcher.Adapters;
 
 public interface IRegistryAdapter
 {
-    IAsyncEnumerable<string> GetInstallationPaths();
+    IAsyncEnumerable<IJavaRegistryRegistration> GetInstallations();
+}
+
+public interface IJavaRegistryRegistration
+{
+    string RegKey { get; }
+    
+    string InstallationPath { get; }
+    
+    string Version { get; }
 }

@@ -94,17 +94,19 @@ internal sealed class CheckSettingsCommand : AsyncCommand<CheckSettingsCommand.S
             }
         }
 
-        await foreach (var path in _registryAdapter.GetInstallationPaths())
+        await foreach (var installation in _registryAdapter.GetInstallations())
         {
-            var binPath = Path.Combine(path, "bin", "java.exe");
+            var binPath = Path.Combine(installation.InstallationPath, "bin", "java.exe");
             if (File.Exists(binPath))
             {
                 continue;
             }
             
             var warn =
-                $"Path for java installation '{path}' set in  Windows Registry. But does not contain a java executable!";
+                $@"Path for java installation '{installation.InstallationPath}' set in  Windows Registry. But does not contain a java executable!
+    You should probably remove the RegKey {installation.RegKey}";
             _console.MarkupLine($"[red]{warn}[/]");
+            errors = true;
         }
 
         if (errors)
