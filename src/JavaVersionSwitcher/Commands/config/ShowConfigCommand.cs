@@ -9,111 +9,113 @@ using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace JavaVersionSwitcher.Commands.config
+namespace JavaVersionSwitcher.Commands.config;
+
+[UsedImplicitly]
+public class ShowConfigCommand : AsyncCommand<ShowConfigCommand.Settings>
 {
-    [UsedImplicitly]
-    public class ShowConfigCommand : AsyncCommand<ShowConfigCommand.Settings>
+    private readonly ILogger _logger;
+    private readonly IConfigurationService _service;
+    private readonly IEnumerable<IConfigurationProvider> _providers;
+    private readonly IAnsiConsole _console;
+
+    public ShowConfigCommand(
+        ILogger logger,
+        IConfigurationService service,
+        IEnumerable<IConfigurationProvider> providers,
+        IAnsiConsole console)
     {
-        private readonly ILogger _logger;
-        private readonly IConfigurationService _service;
-        private readonly IEnumerable<IConfigurationProvider> _providers;
-
-        public ShowConfigCommand(
-            ILogger logger,
-            IConfigurationService service,
-            IEnumerable<IConfigurationProvider> providers)
-        {
-            _logger = logger;
-            _service = service;
-            _providers = providers;
-        }
+        _logger = logger;
+        _service = service;
+        _providers = providers;
+        _console = console;
+    }
         
-        [UsedImplicitly]
-        public sealed class Settings : CommonCommandSettings
+    [UsedImplicitly]
+    public sealed class Settings : CommonCommandSettings
+    {
+        [CommandOption("--providers")]
+        [Description("Show provider names only.")]
+        [DefaultValue(false)]
+        public bool Providers { get; [UsedImplicitly] set; }
+
+        [CommandOption("--provider")]
+        [Description("Show settings for one provider only.")]
+        public string Provider { get; [UsedImplicitly] set; }
+
+        public override ValidationResult Validate()
         {
-            [CommandOption("--providers")]
-            [Description("Show provider names only.")]
-            [DefaultValue(false)]
-            public bool Providers { get; [UsedImplicitly] set; }
-
-            [CommandOption("--provider")]
-            [Description("Show settings for one provider only.")]
-            public string Provider { get; [UsedImplicitly] set; }
-
-            public override ValidationResult Validate()
+            if (Providers && !string.IsNullOrEmpty(Provider))
             {
-                if (Providers && !string.IsNullOrEmpty(Provider))
-                {
-                    return ValidationResult.Error("--providers and --provider are mutually exclusive.");
-                }
+                return ValidationResult.Error("--providers and --provider are mutually exclusive.");
+            }
                 
-                return ValidationResult.Success();
-            }
+            return ValidationResult.Success();
+        }
+    }
+
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    {
+        _logger.PrintVerbose = settings.Verbose;
+        if (settings.Providers)
+        {
+            return await ListProviders();
         }
 
-        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+        if (!string.IsNullOrEmpty(settings.Provider))
         {
-            _logger.PrintVerbose = settings.Verbose;
-            if (settings.Providers)
-            {
-                return await ListProviders();
-            }
-
-            if (!string.IsNullOrEmpty(settings.Provider))
-            {
-                return await ListSettingsForProviders(settings.Provider);
-            }
-
-            return await ListAllSettings();
+            return await ListSettingsForProviders(settings.Provider);
         }
 
-        private async Task<int> ListSettingsForProviders(string settingsProvider)
+        return await ListAllSettings();
+    }
+
+    private async Task<int> ListSettingsForProviders(string settingsProvider)
+    {
+        var provider = _providers.FirstOrDefault(p =>
+            p.ProviderName.Equals(settingsProvider, StringComparison.OrdinalIgnoreCase));
+        if (provider == null)
         {
-            var provider = _providers.FirstOrDefault(p =>
-                p.ProviderName.Equals(settingsProvider, StringComparison.OrdinalIgnoreCase));
-            if (provider == null)
-            {
-                AnsiConsole.MarkupLine($"[red]No provider named {settingsProvider}[/]");
-                return await Task.FromResult(1);
-            }
+            _console.MarkupLine($"[red]No provider named {settingsProvider}[/]");
+            return await Task.FromResult(1);
+        }
             
-            _logger.LogVerbose($"Listing setting for {provider.ProviderName}:");
+        _logger.LogVerbose($"Listing setting for {provider.ProviderName}:");
+        foreach (var setting in provider.Settings.OrderBy(x => x))
+        {
+            _console.WriteLine(setting);
+        }
+            
+        return await Task.FromResult(0);
+    }
+
+    private async Task<int> ListAllSettings()
+    {
+        var table = new Table();
+        table.AddColumn("Provider");
+        table.AddColumn("Setting");
+        table.AddColumn("Configured value");
+
+        foreach (var provider in _providers.OrderBy(p => p.ProviderName))
+        {
             foreach (var setting in provider.Settings.OrderBy(x => x))
             {
-                AnsiConsole.WriteLine(setting);
+                var val = await _service.GetConfiguration(provider.ProviderName, setting);
+                table.AddRow(provider.ProviderName, setting, val);
             }
-            
-            return await Task.FromResult(0);
         }
+            
+        _console.Write(table);
+        return 0;
+    }
 
-        private async Task<int> ListAllSettings()
+    private async Task<int> ListProviders()
+    {
+        foreach (var name in _providers.Select(p => p.ProviderName).OrderBy(x => x))
         {
-            var table = new Table();
-            table.AddColumn("Provider");
-            table.AddColumn("Setting");
-            table.AddColumn("Configured value");
-
-            foreach (var provider in _providers.OrderBy(p => p.ProviderName))
-            {
-                foreach (var setting in provider.Settings.OrderBy(x => x))
-                {
-                    var val = await _service.GetConfiguration(provider.ProviderName, setting);
-                    table.AddRow(provider.ProviderName, setting, val);
-                }
-            }
-            
-            AnsiConsole.Render(table);
-            return 0;
+            _console.WriteLine(name);
         }
-
-        private async Task<int> ListProviders()
-        {
-            foreach (var name in _providers.Select(p => p.ProviderName).OrderBy(x => x))
-            {
-                AnsiConsole.WriteLine(name);
-            }
             
-            return await Task.FromResult(0);
-        }
+        return await Task.FromResult(0);
     }
 }

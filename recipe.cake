@@ -1,4 +1,4 @@
-#load nuget:?package=Cake.Recipe&version=2.2.1
+#load nuget:?package=Cake.Recipe&version=3.1.1
 
 var standardNotificationMessage = "Version {0} of {1} has just been released, it will be available here https://www.nuget.org/packages/{1}, once package indexing is complete.";
 
@@ -14,7 +14,9 @@ BuildParameters.SetParameters(
   shouldRunDotNetCorePack: true,
   preferredBuildProviderType: BuildProviderType.GitHubActions,
   twitterMessage: standardNotificationMessage,
-  shouldRunIntegrationTests: false);
+  shouldRunIntegrationTests: false,
+  shouldRunCoveralls: false
+);
 
 BuildParameters.PrintParameters(Context);
 

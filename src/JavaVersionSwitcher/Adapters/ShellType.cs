@@ -1,20 +1,19 @@
-﻿namespace JavaVersionSwitcher.Adapters
+﻿namespace JavaVersionSwitcher.Adapters;
+
+public enum ShellType
 {
-    public enum ShellType
-    {
-        /// <summary>
-        /// Unknown
-        /// </summary>
-        Unknown,
+    /// <summary>
+    /// Unknown
+    /// </summary>
+    Unknown,
         
-        /// <summary>
-        /// PowerShell
-        /// </summary>
-        PowerShell,
+    /// <summary>
+    /// PowerShell
+    /// </summary>
+    PowerShell,
         
-        /// <summary>
-        /// CMD
-        /// </summary>
-        CommandPrompt,
-    }
+    /// <summary>
+    /// CMD
+    /// </summary>
+    CommandPrompt,
 }

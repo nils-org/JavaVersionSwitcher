@@ -5,35 +5,37 @@ using JetBrains.Annotations;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace JavaVersionSwitcher.Commands.config
+namespace JavaVersionSwitcher.Commands.config;
+
+[UsedImplicitly]
+public class GetConfigCommand : AsyncCommand<GetConfigCommand.Settings>
 {
-    [UsedImplicitly]
-    public class GetConfigCommand : AsyncCommand<GetConfigCommand.Settings>
+    private readonly ILogger _logger;
+    private readonly IConfigurationService _service;
+    private readonly IAnsiConsole _console;
+
+    public GetConfigCommand(
+        ILogger logger,
+        IConfigurationService service,
+        IAnsiConsole console)
     {
-        private readonly ILogger _logger;
-        private readonly IConfigurationService _service;
-
-        public GetConfigCommand(
-            ILogger logger,
-            IConfigurationService service)
-        {
-            _logger = logger;
-            _service = service;
-        }
+        _logger = logger;
+        _service = service;
+        _console = console;
+    }
         
-        [UsedImplicitly]
-        public sealed class Settings : CommonConfigCommandSettings
-        {
-        }
+    [UsedImplicitly]
+    public sealed class Settings : CommonConfigCommandSettings
+    {
+    }
 
-        public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
-        {
-            _logger.PrintVerbose = settings.Verbose;
+    public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
+    {
+        _logger.PrintVerbose = settings.Verbose;
             
-            var val = await _service.GetConfiguration(settings.Provider, settings.Name);
-            AnsiConsole.MarkupLine(val);
+        var val = await _service.GetConfiguration(settings.Provider, settings.Name);
+        _console.MarkupLine(val);
 
-            return 0;
-        }
+        return 0;
     }
 }

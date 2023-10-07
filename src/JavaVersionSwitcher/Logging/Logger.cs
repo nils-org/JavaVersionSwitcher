@@ -1,24 +1,30 @@
 ﻿using Spectre.Console;
 
-namespace JavaVersionSwitcher.Logging
-{
-    public class Logger : ILogger
-    {
-        public bool PrintVerbose { get; set; }
-        
-        public void LogVerbose(string text)
-        {
-            if (!PrintVerbose)
-            {
-                return;
-            }
-            
-            AnsiConsole.MarkupLine($"[gray]{text}[/]");
-        }
+namespace JavaVersionSwitcher.Logging;
 
-        public void LogWarning(string text)
+public class Logger : ILogger
+{
+    private readonly IAnsiConsole _console;
+
+    public Logger(IAnsiConsole console)
+    {
+        _console = console;
+    }
+        
+    public bool PrintVerbose { get; set; }
+        
+    public void LogVerbose(string text)
+    {
+        if (!PrintVerbose)
         {
-            AnsiConsole.MarkupLine($"[yellow]WARNING: {text}[/]");
+            return;
         }
+            
+        _console.MarkupLine($"[gray]{text}[/]");
+    }
+
+    public void LogWarning(string text)
+    {
+        _console.MarkupLine($"[yellow]WARNING: {text}[/]");
     }
 }

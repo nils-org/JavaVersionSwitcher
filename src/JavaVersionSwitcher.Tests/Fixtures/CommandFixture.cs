@@ -8,51 +8,55 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using Spectre.Console.Testing;
 
-namespace JavaVersionSwitcher.Tests.Fixtures
+namespace JavaVersionSwitcher.Tests.Fixtures;
+
+public class CommandFixture
 {
-    public class CommandFixture
+    public CommandFixture()
     {
-        public TestConsole Console => new TestConsole();
+        Logger = new Logger(Console);
+    }
         
-        public Logger Logger => new Logger();
+    public TestConsole Console { get; } = new TestConsole();
         
-        public TestConfigurationService ConfigurationService => new TestConfigurationService();
+    public Logger Logger { get; }
         
-        public Mock<IJavaHomeAdapter> JavaHomeAdapter => new Mock<IJavaHomeAdapter>();
+    public TestConfigurationService ConfigurationService { get; } = new TestConfigurationService();
         
-        public Mock<IPathAdapter> PathAdapter => new Mock<IPathAdapter>();
+    public Mock<IJavaHomeAdapter> JavaHomeAdapter { get; } = new Mock<IJavaHomeAdapter>();
         
-        public Mock<IJavaInstallationsAdapter> JavaInstallationsAdapter => new Mock<IJavaInstallationsAdapter>();
+    public Mock<IPathAdapter> PathAdapter { get; } = new Mock<IPathAdapter>();
         
-        private ITypeRegistrar BuildRegistrar()
-        {
-            var container = new Container();
-            container.RegisterInstance<ILogger>(Logger);
-            container.RegisterInstance<IConfigurationService>(ConfigurationService);
-            container.RegisterInstance(JavaHomeAdapter.Object);
-            container.RegisterInstance(PathAdapter.Object);
-            container.RegisterInstance(JavaInstallationsAdapter.Object);
+    public Mock<IJavaInstallationsAdapter> JavaInstallationsAdapter { get; } = new Mock<IJavaInstallationsAdapter>();
+        
+    private ITypeRegistrar BuildRegistrar()
+    {
+        var container = new Container();
+        container.RegisterInstance<ILogger>(Logger);
+        container.RegisterInstance<IConfigurationService>(ConfigurationService);
+        container.RegisterInstance(JavaHomeAdapter.Object);
+        container.RegisterInstance(PathAdapter.Object);
+        container.RegisterInstance(JavaInstallationsAdapter.Object);
 
-            container.Register<JavaInstallationsAdapterConfigurationProvider>(Lifestyle.Singleton);
+        container.Register<JavaInstallationsAdapterConfigurationProvider>(Lifestyle.Singleton);
 
-            container.Collection.Register<IConfigurationProvider>(
-                new[]
-                {
-                    typeof(JavaInstallationsAdapterConfigurationProvider),
-                },
-                Lifestyle.Singleton);
+        container.Collection.Register<IConfigurationProvider>(
+            new[]
+            {
+                typeof(JavaInstallationsAdapterConfigurationProvider),
+            },
+            Lifestyle.Singleton);
 
-            return new SimpleInjectorRegistrar(container);
-        }
+        return new SimpleInjectorRegistrar(container);
+    }
 
-        public int Run(params string[] args)
-        {
-            AnsiConsole.Console = Console;
-            var registrar = BuildRegistrar();
-            var app = new CommandApp(registrar);
-            app.Configure(Program.ConfigureApp);
+    public int Run(params string[] args)
+    {
+        AnsiConsole.Console = Console;
+        var registrar = BuildRegistrar();
+        var app = new CommandApp(registrar);
+        app.Configure(Program.ConfigureApp);
             
-            return app.Run(args);
-        }
+        return app.Run(args);
     }
 }

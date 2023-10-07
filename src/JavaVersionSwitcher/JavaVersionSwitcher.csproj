@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)/../../README.md" PackagePath="" Pack="true" />
     <None Include="$(MSBuildProjectDirectory)/../../res/logo/logo-128.png" PackagePath="" Pack="true" />
@@ -34,12 +34,23 @@
     <PackageIconUrl>https://cdn.jsdelivr.net/gh/nils-org/JavaVersionSwitcher@main/res/logo/logo-128.png</PackageIconUrl>
     <PackageIcon>logo-128.png</PackageIcon>
   </PropertyGroup>
-  
+
   <ItemGroup>
-    <PackageReference Include="JetBrains.Annotations" Version="2021.1.0" />
-    <PackageReference Include="Microsoft.Windows.Compatibility" Version="5.0.2" />
-    <PackageReference Include="SimpleInjector" Version="5.3.1" />
-    <PackageReference Include="Spectre.Console" Version="0.40.0" />
+    <PackageReference Include="IDisposableAnalyzers" Version="4.0.7">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="6.0.0-preview.5.21301.5" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="7.0.5" />
+    <PackageReference Include="SimpleInjector" Version="5.4.1" />
+    <PackageReference Include="Spectre.Console" Version="0.47.0" />
+    <PackageReference Include="Spectre.Console.Analyzer" Version="0.47.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Spectre.Console.Cli" Version="0.47.0" />
+    <PackageReference Include="Spectre.Console.Registrars.SimpleInjector" Version="0.5.0" />
   </ItemGroup>
 
 </Project>
