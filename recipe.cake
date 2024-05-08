@@ -15,7 +15,8 @@ BuildParameters.SetParameters(
   preferredBuildProviderType: BuildProviderType.GitHubActions,
   twitterMessage: standardNotificationMessage,
   shouldRunIntegrationTests: false,
-  shouldRunCoveralls: false
+  shouldRunCoveralls: false,
+  shouldRunCodecov: false
 );
 
 BuildParameters.PrintParameters(Context);
