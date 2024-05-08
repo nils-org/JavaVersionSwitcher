@@ -27,7 +27,7 @@ public class Program
         config.AddExample(new[] { "scan", "--force" });
         config.AddExample(new[] { "switch" });
 
-        config.SetExceptionHandler(ex =>
+        config.SetExceptionHandler((ex, _) =>
         {
 #if DEBUG
             AnsiConsole.WriteException(ex, ExceptionFormats.ShowLinks);
