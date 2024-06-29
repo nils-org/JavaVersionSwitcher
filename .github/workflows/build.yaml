@@ -47,7 +47,7 @@ jobs:
         with:
           path: tools
           key: ${{ runner.os }}-tools-${{ hashFiles('recipe.cake') }}
-      - uses: actions/setup-dotnet@4d6c8fcf3c8f7a60068d26b594648e99df24cee3 # v4.0.0
+      - uses: actions/setup-dotnet@53063334342b67eb3f5066a7ac9151683aa30b96 # v1.8.1
         with:
           dotnet-version: |
             2.1
